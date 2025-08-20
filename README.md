@@ -22,7 +22,7 @@
   npm install -g cordova
   ```
 
-- Python 3.10+
+- Python 3.10+ (Testeado especificamente con: Python 3.12.4)
 
 - Crear un venv:
   ```bash
@@ -34,9 +34,14 @@
   .\venv\Scripts\Activate
   ```
 
+- Asegurate de usar este comando:
+  ```bash
+  python -m pip install --upgrade pip setuptools wheel
+  ```
+
 - Instalar dependencias de Python:
   ```bash
-  pip install -r requirements.txt
+  python -m pip install -r requirements.txt
   ```
 
 ## 📦 Estructura del proyecto
