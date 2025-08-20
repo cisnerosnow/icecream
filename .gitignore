@@ -1,0 +1,25 @@
+# Ignore Python virtual environments
+venv/
+.venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Cordova build artifacts
+platforms/
+plugins/
+www/
+node_modules/
+
+# dotenv environment files
+.env
+
+# VS Code and IDEs
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
