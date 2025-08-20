@@ -23,9 +23,20 @@
   ```
 
 - Python 3.10+
+
+- Crear un venv:
+  ```bash
+  python -m venv venv
+  ```
+
+- Activas el venv:
+  ```bash
+  .\venv\Scripts\Activate
+  ```
+
 - Instalar dependencias de Python:
   ```bash
-  pip install -r requirements.txt.txt
+  pip install -r requirements.txt
   ```
 
 ## 📦 Estructura del proyecto
@@ -33,7 +44,7 @@
 ```bash
 icecream/
 ├── app.py                  # Script principal con Gradio
-├── requirements.txt.txt
+├── requirements.txt
 └── README.md
 ```
 
@@ -56,11 +67,8 @@ icecream/
 
 - Un directorio creado como `C:/dev/NombreApp`
 - Proyecto Cordova con Android configurado
-- Listo para compilar con:
-
-  ```bash
-  cordova build android --release
-  ```
+- Archivo .aab compilado y listo
+- Solo falta que tu lo firmes para que lo subas al playstore
 
 ## 📄 Licencia
 
