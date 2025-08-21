@@ -3,13 +3,49 @@ import os
 import shutil
 import subprocess
 import tempfile
+import re
+import unicodedata
 from pathlib import Path
 from bs4 import BeautifulSoup
 from PIL import Image
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 BASE_DIR = Path("C:/dev").resolve()
 
 # Utilidades ---------------
+
+def normalize_title_to_folder(title: str) -> str:
+    """Convierte el título de la app a un nombre válido de carpeta.
+    Ejemplo: 'Hola Martín' -> 'hola-martin'
+    """
+    # Normalizar caracteres acentuados
+    normalized = unicodedata.normalize('NFD', title)
+    # Remover diacríticos (acentos)
+    without_accents = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+    # Convertir a minúsculas
+    lowercase = without_accents.lower()
+    # Reemplazar espacios y caracteres especiales con guiones
+    folder_name = re.sub(r'[^a-z0-9]+', '-', lowercase)
+    # Remover guiones al inicio y final
+    folder_name = folder_name.strip('-')
+    return folder_name
+
+def validate_app_title(title: str) -> tuple[bool, str]:
+    """Valida que el título de la app no contenga caracteres prohibidos.
+    Permite letras acentuadas pero no caracteres especiales problemáticos.
+    """
+    if not title or not title.strip():
+        return False, "El título no puede estar vacío"
+    
+    # Permitir letras (incluidas acentuadas), números, espacios y algunos símbolos básicos
+    allowed_pattern = r'^[\w\s\u00C0-\u024F\u1E00-\u1EFF._-]+$'
+    if not re.match(allowed_pattern, title.strip()):
+        return False, "El título contiene caracteres no válidos. Solo se permiten letras, números, espacios, puntos, guiones y guiones bajos"
+    
+    return True, ""
 
 def run(cmd, cwd=None):
     proc = subprocess.run(cmd, cwd=cwd, text=True, capture_output=True, shell=True)
@@ -124,14 +160,13 @@ def save_icon_512(icon_file, resources_dir: Path):
 
 # Flujo principal ---------------
 
-def build_cordova(html_file, app_title, project_folder, icon_image, keystore_path, keystore_alias, keystore_password):
+def build_cordova(html_file, app_title, icon_image):
     logs = []
     try:
-        if not project_folder or not project_folder.strip():
-            return "ERROR: Debes indicar el nombre de la carpeta del proyecto."
-
-        if not app_title or not app_title.strip():
-            return "ERROR: Debes indicar el título del app."
+        # Validar título de la app
+        is_valid, error_msg = validate_app_title(app_title)
+        if not is_valid:
+            return f"ERROR: {error_msg}"
 
         if html_file is None:
             return "ERROR: Debes subir un archivo .html."
@@ -139,8 +174,18 @@ def build_cordova(html_file, app_title, project_folder, icon_image, keystore_pat
         if icon_image is None:
             return "ERROR: Debes subir un icono (imagen) para generar resources/icon.png."
 
-        proj_dir = BASE_DIR / project_folder.strip()
-        app_id = f"com.oneclicksoftwaresolutions.{project_folder.strip()}"
+        # Generar nombre de carpeta desde el título
+        project_folder = normalize_title_to_folder(app_title.strip())
+        proj_dir = BASE_DIR / project_folder
+        app_id = f"com.oneclicksoftwaresolutions.{project_folder}"
+        
+        # Cargar configuración del keystore desde .env
+        keystore_path = os.getenv('KEYSTORE_PATH')
+        keystore_alias = os.getenv('KEYSTORE_ALIAS')
+        keystore_password = os.getenv('KEYSTORE_PASSWORD')
+        
+        if not keystore_path or not keystore_alias or not keystore_password:
+            return "ERROR: Falta configuración del keystore en el archivo .env"
 
         # 1) cordova create
         cmd_create = f'cordova create "{project_folder}" "{app_id}" "{app_title}"'
@@ -217,21 +262,16 @@ def build_cordova(html_file, app_title, project_folder, icon_image, keystore_pat
         logs.append(f"✔ Copiado AAB a {target_aab}")
 
         # 10) jarsigner
-        if not keystore_path:
-            return "\n\n".join(logs + ["❗ Falta ruta del keystore para firmar con jarsigner."])
+        keystore_path_obj = Path(keystore_path).resolve()
+        if not keystore_path_obj.exists():
+            return "\n\n".join(logs + [f"❌ Keystore no existe: {keystore_path_obj}"])
 
-        keystore_path = Path(keystore_path).resolve()
-        if not keystore_path.exists():
-            return "\n\n".join(logs + [f"❌ Keystore no existe: {keystore_path}"])
-
-        alias = keystore_alias.strip() or ""
-        if not keystore_password:
-            return "\n\n".join(logs + ["❗ Falta contraseña del keystore."])
+        alias = keystore_alias.strip()
 
         # jarsigner permite pasar -storepass (ojo: se mostrará en procesos del SO mientras corre)
         cmd_jarsigner = (
             f'jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 '
-            f'-keystore "{keystore_path}" -storepass "{keystore_password}" "{target_aab}" {alias}'
+            f'-keystore "{keystore_path_obj}" -storepass "{keystore_password}" "{target_aab}" {alias}'
         )
         code, out = run(cmd_jarsigner, cwd=str(BASE_DIR))
         logs.append(f"$ {cmd_jarsigner}\n{out}")
@@ -255,22 +295,14 @@ with gr.Blocks(title="Icecream - Cordova Builder") as demo:
         html_file = gr.File(label="Sube tu HTML (se convertirá en www/index.html)", file_types=[".html"])
         icon_image = gr.File(label="Icono del app (cualquier imagen, se redimensiona a 512x512)", file_types=["image"])
 
-    with gr.Row():
-        app_title = gr.Textbox(label="Título de la App", placeholder="Mi App Cordova")
-        project_folder = gr.Textbox(label="Nombre de la carpeta del proyecto", placeholder="miapp")
-
-    gr.Markdown("### Firma con jarsigner")
-    with gr.Row():
-        keystore_path = gr.Textbox(label="Ruta del keystore (.jks)", value=str(BASE_DIR / "my-release-key.jks"))
-        keystore_alias = gr.Textbox(label="Alias del keystore", value="")
-        keystore_password = gr.Textbox(label="Contraseña del keystore", type="password", placeholder="••••••••")
+    app_title = gr.Textbox(label="Título de la App", placeholder="Mi App Cordova", info="El nombre de la carpeta se generará automáticamente basado en este título")
 
     run_btn = gr.Button("Crear, preparar, compilar y firmar")
     output = gr.Textbox(label="Log", lines=25)
 
     run_btn.click(
         fn=build_cordova,
-        inputs=[html_file, app_title, project_folder, icon_image, keystore_path, keystore_alias, keystore_password],
+        inputs=[html_file, app_title, icon_image],
         outputs=[output]
     )
 
