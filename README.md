@@ -44,12 +44,21 @@
   python -m pip install -r requirements.txt
   ```
 
+- **Configurar el archivo .env** con los datos de tu keystore:
+  ```bash
+  # Edita el archivo .env y configura:
+  KEYSTORE_PATH=C:/ruta/a/tu/keystore.jks
+  KEYSTORE_ALIAS=tu-alias-del-keystore
+  KEYSTORE_PASSWORD=tu-password-del-keystore
+  ```
+
 ## 📦 Estructura del proyecto
 
 ```bash
 icecream/
 ├── app.py                  # Script principal con Gradio
 ├── requirements.txt
+├── .env                    # Configuración del keystore (no subir a Git)
 └── README.md
 ```
 
@@ -63,17 +72,19 @@ icecream/
 
 2. Abre el navegador y sigue la interfaz para:
    - Seleccionar tu archivo `.html`.
-   - Especificar el nombre del app.
-   - Generar automáticamente un proyecto Cordova listo.
+   - Especificar el título de la app (el nombre de carpeta se genera automáticamente).
+   - Subir un ícono para la app.
+   - Generar automáticamente un proyecto Cordova listo y firmado.
 
 3. El proyecto se crea dentro de `C:/dev/` con la estructura Cordova estándar.
+   - El nombre de la carpeta se genera automáticamente desde el título (ej: "Hola Martín" → "hola-martin")
 
 ## 📤 Salida esperada
 
-- Un directorio creado como `C:/dev/NombreApp`
+- Un directorio creado como `C:/dev/nombre-app-normalizado`
 - Proyecto Cordova con Android configurado
-- Archivo .aab compilado y listo
-- Solo falta que tu lo firmes para que lo subas al playstore
+- Archivo .aab compilado, firmado y listo para el Play Store
+- El .aab final se copia a `C:/dev/app-release.aab`
 
 ## 📄 Licencia
 
