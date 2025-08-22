@@ -13,6 +13,9 @@ plugins/
 www/
 node_modules/
 
+# dotenv environment files
+.env
+
 # VS Code and IDEs
 .vscode/
 .idea/
