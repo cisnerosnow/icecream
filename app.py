@@ -19,7 +19,7 @@ BASE_DIR = Path("C:/dev").resolve()
 
 def normalize_title_to_folder(title: str) -> str:
     """Convierte el título de la app a un nombre válido de carpeta.
-    Ejemplo: 'Hola Martín' -> 'hola-martin'
+    Ejemplo: 'Hola Martín' -> 'hola_martin'
     """
     # Normalizar caracteres acentuados
     normalized = unicodedata.normalize('NFD', title)
@@ -27,10 +27,10 @@ def normalize_title_to_folder(title: str) -> str:
     without_accents = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
     # Convertir a minúsculas
     lowercase = without_accents.lower()
-    # Reemplazar espacios y caracteres especiales con guiones
-    folder_name = re.sub(r'[^a-z0-9]+', '-', lowercase)
-    # Remover guiones al inicio y final
-    folder_name = folder_name.strip('-')
+    # Reemplazar espacios y caracteres especiales con guiones bajos
+    folder_name = re.sub(r'[^a-z0-9]+', '_', lowercase)
+    # Remover guiones bajos al inicio y final
+    folder_name = folder_name.strip('_')
     return folder_name
 
 def validate_app_title(title: str) -> tuple[bool, str]:
